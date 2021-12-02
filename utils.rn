@@ -1,0 +1,91 @@
+use std::iter::range;
+use fs::read_to_string;
+
+
+pub(crate) mod iter {
+    pub fn all_pairs(data) {
+       for (i, a) in data.iter().enumerate() {
+           for b in data.iter().skip(i + 1) {
+                yield [a, b]
+           }
+       }
+    }
+
+    pub fn all_triples(data) {
+       let count = data.len();
+       for i in 0..count {
+           let a = data[i];
+           for j in (i + 1)..count {
+               let b = data[j];
+               for k in (j+1)..count {
+                  yield [a, b, data[k]]
+               }
+           }
+       }
+    }
+
+    pub fn batching(it, func) {
+        (|| {
+            while let Some(v) = func(it) {
+                yield v
+            }
+        })().iter()
+    }
+
+    pub fn batch_by_lines(it) {
+        batching(it, |it| {
+            let v = [];
+            loop {
+                match it.next() {
+                    None => { return  if v.len() != 0 { Some(v.iter()) } else { None }; },
+                    Some(x) => { if x == "" {  return Some(v.iter()); } else { v.push(x); } }
+                }
+            }
+        })
+    }
+
+    pub fn chunks(it, n) {
+        batching(it, |seq| {
+            let v = [];
+            loop {
+                match seq.next() {
+                    None => { return if v.len() == n { Some(v) } else { None }; },
+                    Some(x) => {  v.push(x); }
+                }
+
+                if v.len() == n {
+                    return Some(v);
+                }
+            }
+        })
+    }
+
+	pub fn windows(it, n) {
+		let v = [];
+        batching(it, |seq| {
+            loop {
+				if v.len() == n {
+				   v.remove(0);
+				}
+                match seq.next() {
+                    None => { return None; },
+                    Some(x) => {  v.push(x); }
+                }
+
+                if v.len() == n {
+                   return Some(v);
+                }
+
+            }
+        })
+    }
+}
+
+
+
+pub async fn read_file(s) {
+    Ok(read_to_string(s)
+        .await?
+        .split('\n')
+		.map(std::string::String::trim))
+}

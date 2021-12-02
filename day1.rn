@@ -1,0 +1,61 @@
+#!./runic
+
+mod utils;
+
+use utils::{read_file, iter};
+
+fn count_steps(measurements) {
+    iter::windows(measurements.iter(), 2)
+	    .filter(|v| v[1] > v[0]).count()
+}
+
+fn count_steps3(measurements) {
+    iter::windows(measurements.iter(), 3)
+	    .map(|v| v.iter().sum())
+		.fold((0 , 10000), |(cnt, prev), total| {
+       	    if total > prev {
+                (cnt + 1, total)
+                } else {
+                (cnt, total)
+            }
+        }).0
+}
+
+pub async fn main() {
+	let input = read_file("inputs/day1.txt")
+	    .await?
+		.filter(|v| v.len() > 0)
+		.map(std::int::parse)
+		.map(std::result::Result::unwrap)
+		.collect_vec();
+
+	let r = count_steps(input);
+	println!("Result: {}", r);
+
+	let r = count_steps3(input);
+	println!("Result 2: {}", r);
+}
+
+const TEST_DATA = [
+    199,
+    200,
+    208,
+    210,
+    200,
+    207,
+    240,
+    269,
+    260,
+    263,
+];
+
+#[test]
+fn test_count_steps() {
+    assert_eq!(count_steps(TEST_DATA), 7);
+}
+
+
+#[test]
+fn test_count_steps3() {
+    assert_eq!(count_steps3(TEST_DATA), 5);
+}

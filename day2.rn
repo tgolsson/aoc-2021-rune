@@ -1,0 +1,81 @@
+#!./runic
+
+mod utils;
+use utils::{read_file, iter};
+
+enum Commands {
+    Forward,
+	Up,
+	Down,
+}
+
+fn parse_lines(iter) {
+    iter.map(|l| l.split(' ').collect_vec()).map(|pair| {
+        let distance = std::int::parse(pair[1]).unwrap();
+        let command = match pair[0] {
+            "forward" => Commands::Forward,
+            "up" => Commands::Up,
+            "down" => Commands::Down,
+        };
+        (command, distance)
+    }).collect_vec()
+}
+
+fn move_with(commands) {
+    let xy = (0, 0);
+    for (command, distance) in commands	{
+		xy = match command {
+			Commands::Forward => (xy.0 + distance, xy.1),
+			Commands::Down => (xy.0, xy.1 + distance),
+			Commands::Up => (xy.0, xy.1 - distance),
+		};
+	}
+
+	xy
+}
+
+fn move_with2(commands) {
+    let xy = (0, 0);
+	let aim = 0;
+    commands.iter().fold(((0, 0), 0), |(xy, aim), (command, distance)|	{
+		match command {
+			Commands::Forward => ((xy.0 + distance, xy.1 + distance * aim), aim),
+			Commands::Down => (xy, aim + distance) ,
+			Commands::Up => (xy, aim - distance),
+		}
+	}).0
+}
+
+
+pub async fn main() {
+	let input = parse_lines(read_file("inputs/day2.txt").await?.filter(|v| v.len() > 0));
+
+	let xy = move_with(input);
+	println!("Result: {}", xy.0 * xy.1);
+
+	let xy = move_with2(input);
+	println!("Result: {}", xy.0 * xy.1);
+}
+
+const EXAMPLE_INPUT = [
+    "forward 5",
+    "down 5",
+    "forward 8",
+    "up 3",
+    "down 8",
+    "forward 2",
+];
+
+#[test]
+fn test_t1() {
+     let commands = parse_lines(EXAMPLE_INPUT.iter());
+
+     assert_eq!(move_with(commands), (15, 10))
+}
+
+#[test]
+fn test_t2() {
+     let commands = parse_lines(EXAMPLE_INPUT.iter());
+
+     assert_eq!(move_with2(commands), (15, 60))
+}
