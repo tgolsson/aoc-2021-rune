@@ -1,0 +1,142 @@
+#!./runic
+
+mod utils;
+use utils::{read_file, iter};
+
+fn parse_binstr(s) {
+    s.chars()
+	    .map(|v| if v == '1' { 1 } else { 0 })
+		.fold(0, |a, b| a << 1 | b)
+}
+
+fn count_pos(nums, idx) {
+    nums
+	    .iter()
+        .fold(0, |counter, data| {
+	         let mask = 1 << idx;
+	         let ok = if (mask & data == mask) { 1 } else { 0 };
+	 	     counter + ok
+        })
+}
+
+fn fold_by_position(binstrs, ll) {
+    let inputs = [];
+
+    for _ in 0..ll {
+	    inputs.push(0);
+    }
+	
+    binstrs
+	    .iter()
+        .fold(inputs, |counters, data| {
+            (0..counters.len()).iter().map(|idx| {
+			     let mask = 1 << (inputs.len() - 1 - idx);
+			     let ok = if (mask & data == mask) { 1 } else { 0 };
+			     counters[idx] = ok + counters[idx];
+			}).count();
+			counters
+    })
+}
+
+fn gamma_epsilon(counters, ncount) {
+    let g = 0;
+	let e = 0;
+
+	for c in counters {
+	    if c > ncount / 2 {
+		   g = g << 1 | 1;
+		   e = e << 1;
+        } else {
+     	   g = g << 1;
+		   e = e << 1 | 1;
+        }
+		
+    }
+
+    (g, e)
+}
+
+fn oxygen_generator_rating(alltags, counts) {
+    let pos = counts - 1;
+    while alltags.len() > 1 {
+	    let original_count = alltags.len();
+		
+	    let mask = 1 << pos;
+		let count = count_pos(alltags, pos);
+		let anti_count = original_count - count;
+		let expected = if count >= anti_count { mask } else { 0 };
+		alltags = alltags.iter().filter(|v| (v & mask) == expected).collect_vec();
+		if alltags.len() == 1 {	
+		   return alltags[0];
+    	}
+
+        dbg(alltags.len());
+		pos -= 1;
+    }
+
+    panic!("xx");
+}
+
+
+fn co2_scrubber_rating(alltags, counts) {
+    let pos = counts - 1;
+    while alltags.len() > 1 {
+	    let original_count = alltags.len();
+		
+	    let mask = 1 << (pos);
+		let count = count_pos(alltags, pos);
+		let anti_count = original_count - count;
+		let expected = if count < anti_count { mask } else { 0 };
+		alltags = alltags.iter().filter(|v| (v & mask) == expected).collect_vec();
+		if alltags.len() == 1 {
+		   return alltags[0];
+    	}
+		pos -= 1;
+    }
+
+    panic!("xx");
+}
+
+pub async fn main() {
+	let input = read_file("inputs/day3.txt").await?.filter(|v| v.len() > 0).map(parse_binstr).collect_vec();
+	let (g, e) = gamma_epsilon(fold_by_position(input, 12), 12);
+	println!("Gamma, epsilon: {} * {} = {}", g, e, g * e);
+	
+    let r1 = oxygen_generator_rating(input, 12);
+    let r2 = co2_scrubber_rating(input, 12);
+
+	println!("OG, C2: {} * {} = {}", r1, r2, r1 * r2);
+}
+
+const TEST_DATA = [
+    "00100",
+    "11110",
+    "10110",
+    "10111",
+    "10101",
+    "01111",
+    "00111",
+    "11100",
+    "10000",
+    "11001",
+    "00010",
+  	"01010",
+];
+
+#[test]
+fn test_task11() {
+    let bincounts = fold_by_position(TEST_DATA.iter().map(parse_binstr).collect_vec(), 5);
+
+    let (g, e) = gamma_epsilon(bincounts, TEST_DATA.len());
+	assert_eq!(g * e, 198);
+}
+
+#[test]
+fn test_task2() {
+    let nums = TEST_DATA.iter().map(parse_binstr).collect_vec();
+    let r = oxygen_generator_rating(nums, 5);
+	assert_eq!(r, 23);
+
+    let r = co2_scrubber_rating(nums, 5);
+	assert_eq!(r, 10);
+}
