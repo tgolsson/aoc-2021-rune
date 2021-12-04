@@ -1,0 +1,156 @@
+#!./runic
+
+mod utils;
+use utils::{read_file, iter};
+
+fn parse_numbers(data) {
+    data.split(',')
+	    .map(std::int::parse)
+		.map(std::result::Result::unwrap)
+		.collect_vec()
+}
+
+fn parse_line(line) {
+    line.split(' ')
+	    .filter(|v| v != "")
+		.map(std::int::parse)
+        .map(std::result::Result::unwrap)
+        .collect_vec()
+}
+
+fn parse_boards(lines) {
+    iter::chunks(lines.map(parse_line), 5)
+	    .collect_vec()
+}
+
+fn parse_input(lines) {
+   let input_order = parse_numbers(lines.next()?);
+
+   let b = parse_boards(lines.filter(|v| v != ""));
+
+   (input_order, b)
+}
+
+fn check_board(board) {
+    for i in 0..5 {
+	    let row = true;
+		let col = true;
+	    for j in 0..5 {
+		    if board[i][j] > 0 {
+		        row = false;
+            }
+		    if board[j][i] > 0 {
+		        col = false;
+            }
+        }
+		if row || col {
+		    return Some(
+			    board.iter()
+                    .flat_map(|r| r.iter())
+					.filter(|v| v > 0).sum()
+		    );
+        } 
+    }
+ 	None
+}
+
+fn apply_to_board(num, board) {
+    for y in 0..5 {
+	    for x in 0..5 {
+		    if board[y][x] == num {
+		        board[y][x] = -board[y][x]
+            }
+        }
+    }
+}
+
+fn task1(order, boards) {
+    for num in order {
+	    for b in boards {
+		    apply_to_board(num, b);
+			if let Some(score) = check_board(b) {
+			    return score * num;
+            }
+        }
+    }
+}
+
+fn task2(order, boards) {
+    let lw = None;
+	
+    for num in order {	    
+	    for b in boards {
+		    apply_to_board(num, b);
+        }
+
+        let removals = [];
+		for (idx, b) in boards.iter().enumerate() {
+		    if let Some(score) = check_board(b) {               
+                lw = Some((b, num));
+			    removals.push(idx);
+            } 
+        }
+
+        for r in removals.iter().rev() {
+		    boards.remove(r);
+        }
+
+        if boards.len() == 0 {
+		    break;
+        }
+    }
+	lw
+}
+
+
+pub async fn main() {
+	let input = read_file("inputs/day4.txt").await?.filter(|v| v != "");
+    let (order, boards) = parse_input(input);
+    let r = task1(order, boards.iter().map(|v| v.clone()).collect_vec());
+	println(`Task 1: ${r}`);
+
+	let r = task2(order, boards);
+	let (board, num) = r.unwrap();
+
+	println(`Task 1: ${check_board(board).unwrap() * num}`);
+}
+
+
+const TEST_DATA = [
+    "7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1",
+    "",
+    "22 13 17 11  0",
+    " 8  2 23  4 24",
+    "21  9 14 16  7",
+    " 6 10  3 18  5",
+    " 1 12 20 15 19",
+    "",
+    " 3 15  0  2 22",
+    " 9 18 13 17  5",
+    "19  8  7 25 23",
+    "20 11 10 24  4",
+    "14 21 16 12  6",
+    "",
+    "14 21 17 24  4",
+    "10 16 15  9 19",
+    "18  8 23 26 20",
+    "22 11 13  6  5",
+    " 2  0 12  3  7",
+];
+
+#[test]
+fn test1() {
+    let (order, boards) = parse_input(TEST_DATA.iter());
+	let r = task1(order, boards);
+    assert_eq!(r, 4512);
+}
+
+
+#[test]
+fn test2() {
+    let (order, boards) = parse_input(TEST_DATA.iter());
+	let r = task2(order, boards);
+	let (board, num) = r.unwrap();
+	assert_eq!(num, 13);
+	assert_eq!(check_board(board).unwrap(), 148);
+}
