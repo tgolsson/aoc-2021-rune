@@ -1,0 +1,168 @@
+#!./runic
+
+mod utils;
+use utils::{read_file, iter};
+
+struct Coord { x, y }
+
+impl Coord {
+    fn parse(snippet) {
+	    let parts = snippet.split(',');
+		let x = std::int::parse(parts.next()?)?;
+		let y = std::int::parse(parts.next()?)?;
+
+        Self { x, y }
+    }
+}
+
+struct Line{ start, end }
+
+impl Line {
+    fn new(start, end) {
+	    Self { start, end }
+    }
+}
+
+fn parse_line(line) {
+    let parts = line.split(" -> ");
+	let start = parts.next().map(Coord::parse)?;
+    let end = parts.next().map(Coord::parse)?;
+    Line::new(start, end)
+}
+
+fn parse(lines) {
+    lines.map(parse_line).collect_vec()
+}
+
+fn max(a, b, c) {
+    std::int::max(std::int::max(a, b), c)
+}
+
+fn make_map(mx, my) {
+    let map = [];
+    for y in 0..=my {
+	    let row = [];
+		for x in 0..=mx {
+		    row.push(0);
+        }
+	    map.push(row);
+    }
+
+    map
+}
+
+fn ordered(a, b) {
+    if a < b {
+	    (a, b)
+	} else {
+	    (b, a)
+    }
+}
+fn draw_line(map, line, allow_diagonal) {
+    if line.start.x == line.end.x {
+	    let x = line.start.x;
+	    let (start, end) = ordered(line.start.y, line.end.y);
+	    for y in start..=end {
+		    map[y][x] = map[y][x] + 1;
+        }
+    } else if line.end.y == line.start.y {
+	    let y = line.start.y;
+	    let (start, end) = ordered(line.start.x, line.end.x);
+	    for x in start..=end {
+		    map[y][x] = map[y][x] + 1;
+        }
+    } else if allow_diagonal {
+	    let dx = utils::math::sign(line.end.x - line.start.x);
+	    let dy = utils::math::sign(line.end.y - line.start.y);
+
+
+        let x = line.start.x;
+		let y = line.start.y;
+        loop {
+		    let should_break = x == line.end.x;
+            map[y][x] = map[y][x] + 1;
+            x = x + dx;
+            y = y + dy;
+			if should_break {
+    			break;
+            }
+        }
+    }
+}
+
+fn print_map(map) {
+    for row in map {
+	    println(row.iter().map(|v| { if v == 0 { "."} else { `${v}` }}).fold("", |a, b| a + b));
+    }
+}
+
+
+fn task1(lines, allow_diagonal) {
+    let (mx, my) = lines.iter().fold((0, 0), |(mx, my), line| {
+         (max(mx, line.start.x, line.end.x),
+		  max(my, line.start.y, line.end.y))
+    });
+
+    let map = make_map(mx, my);
+
+    for line in lines {
+	    draw_line(map, line, allow_diagonal);
+    }
+
+    map.iter().flat_map(|v| v.iter()).filter(|v| v >= 2).count()
+}
+
+pub async fn main() {
+	let lines = parse(read_file("inputs/day5.txt").await?.filter(|v| v.len() > 0));
+	let r = task1(lines, false);
+
+    println(`Task 1: ${r}`);
+
+	let r = task1(lines, true);
+    println(`Task 2: ${r}`);
+}
+
+const TEST_DATA = [
+    "0,9 -> 5,9",
+    "8,0 -> 0,8",
+    "9,4 -> 3,4",
+    "2,2 -> 2,1",
+    "7,0 -> 7,4",
+    "6,4 -> 2,0",
+    "0,9 -> 2,9",
+    "3,4 -> 1,4",
+    "0,0 -> 8,8",
+    "5,5 -> 8,2",
+];
+
+#[test]
+fn test_task1() {
+    let lines = parse(TEST_DATA.iter());
+	let r = task1(lines, false);
+	assert_eq!(r, 5);
+}
+
+
+#[test]
+fn test_task2() {
+    let lines = parse(TEST_DATA.iter());
+	let r = task1(lines, true);
+	assert_eq!(r, 12);
+}
+
+#[test]
+fn test_draw_diagonal() {
+    let m = make_map(3, 3);
+	draw_line(m, Line::new(Coord { x: 1, y: 1 }, Coord { x: 3, y: 3}), true);
+
+    assert_eq!(m, [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]);
+}
+
+
+#[test]
+fn test_draw_diagonal_rev() {
+    let m = make_map(3, 3);
+	draw_line(m, Line::new(Coord { x: 3, y: 3 }, Coord { x: 1, y: 1} ), true);
+
+    assert_eq!(m, [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]);
+}

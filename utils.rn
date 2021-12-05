@@ -1,6 +1,15 @@
 use std::iter::range;
 use fs::read_to_string;
 
+pub(crate) mod math {
+    pub fn sign(v) {
+	   if v < 0 {
+	       -1
+       } else {
+	        1
+       }
+    }
+}
 
 pub(crate) mod iter {
     pub fn all_pairs(data) {
