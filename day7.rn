@@ -1,0 +1,66 @@
+#!./runic
+
+mod inputs;
+
+fn find_recon_point(crabs) {
+   let (min, max) = crabs.iter().fold((0, 0), |(n, x), v| {
+      (std::int::min(n, v), std::int::max(x, v))
+   });
+
+   // will always underestimate because truncation
+   let current_cost = max * crabs.len();
+   let current_point = 0;
+   for i in min..max {
+       let cost = crabs.iter().map(|v| (i - v).abs()).sum();
+	   if cost < current_cost {
+	       current_cost = cost;
+		   current_point = i;
+       }
+   }
+
+   current_cost
+}
+
+fn cost_between(a, b) {
+    match (a - b).abs() {
+	    0 => 0,
+	    n => (0..=n).iter().sum()
+    }
+}
+
+fn find_recon_point2(crabs) {
+   let (min, max) = crabs.iter().fold((0, 0), |(n, x), v| {
+      (std::int::min(n, v), std::int::max(x, v))
+   });
+
+   // will always underestimate because truncation
+   let current_cost = max * crabs.len() * crabs.len();
+   let current_point = 0;
+   for i in min..max {
+       let cost = crabs.iter().map(|v| cost_between(v, i)).sum();
+	   if cost < current_cost {
+	       current_cost = cost;
+           current_point = i;
+       }
+   }
+   dbg(current_point);
+   current_cost
+}
+
+pub async fn main() {
+    let crab_locations = inputs::DAY_7;
+    dbg(find_recon_point(crab_locations));
+    dbg(find_recon_point2(crab_locations));
+}
+
+#[test]
+fn test_task1() {
+    let crab_locations = [16,1,2,0,4,2,7,1,2,14];
+	assert_eq!(find_recon_point(crab_locations), 37);
+}
+
+#[test]
+fn test_task2() {
+    let crab_locations = [16,1,2,0,4,2,7,1,2,14];
+	assert_eq!(find_recon_point2(crab_locations), 168);
+}
