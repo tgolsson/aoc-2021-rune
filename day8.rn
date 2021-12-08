@@ -101,8 +101,8 @@ fn task1(items) {
 
 fn task2(lines) {
     let cb = generate_codebooks();
-	let r = [];
-	for l in lines {
+    let r = [];
+    for l in lines {
         for c in cb {
             if l.0.iter().map()(|l| c.decode(l)).all(Option::is_some) && l.1.iter().map(|l| c.decode(l)).all(Option::is_some) {
                 let v = l.1.iter()
