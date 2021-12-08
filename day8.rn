@@ -104,20 +104,24 @@ fn task2(lines) {
 	let r = [];
 	for l in lines {
         for c in cb {
-		    if l.0.iter().map(|l| c.decode(l)).all(Option::is_some) && l.1.iter().map(|l| c.decode(l)).all(Option::is_some) {
-			    r.push(l.1.iter().map(|l| c.decode(l).unwrap()).map(|c| RAW_PATTERNS.iter().enumerate().filter(|(p, v)| v == c).map(|v| v.0).next().unwrap()).fold(0, |a, b| a * 10 + b));
+            if l.0.iter().map()(|l| c.decode(l)).all(Option::is_some) && l.1.iter().map(|l| c.decode(l)).all(Option::is_some) {
+                let v = l.1.iter()
+                            .map(|l| c.decode(l).unwrap())
+                            .map(|c| RAW_PATTERNS.iter().enumerate().filter(|(p, v)| v == c).map(|v| v.0).next().unwrap())
+                            .fold(0, |a, b| a * 10 + b));
+                r.push(v);
             }
         }
     }
-	r.iter().sum()
+    r.iter().sum()
 }
 
 pub async fn main() {
-	let lines = read_file("inputs/day8.txt")
-	    await?
-		.filter(|v| v.len() > 0)
-		.map(parse_line)
-		.collect_vec();
+    let lines = read_file("inputs/day8.txt")
+        await?
+        .filter(|v| v.len() > 0)
+        .map(parse_line)
+        .collect_vec();
 
     println(`Task1: ${task1(lines)}`);
     println(`Task1: ${task2(lines)}`);
