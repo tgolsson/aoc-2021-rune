@@ -1,0 +1,150 @@
+#!./runic
+
+use std::collections::{HashMap, HashSet};
+
+mod utils;
+use utils::read_file;
+
+const RAW_PATTERNS = [
+    "abcefg",
+    "cf",
+    "acdeg",
+    "acdfg",
+    "bcdf",
+    "abdfg",
+    "abdefg",
+    "acf",
+    "abcdefg",
+    "abcdfg",
+];
+
+struct CodeBook {
+    map,
+}
+
+fn to_digit(c) {
+    match c {
+        'a' => 0,
+        'b' => 1,
+        'c' => 2,
+        'd' => 3,
+        'e' => 4,
+        'f' => 5,
+        'g' => 6,
+   }
+}
+
+
+fn from_digit(c) {
+    match c {
+        0 => 'a',
+        1 => 'b',
+        2 => 'c',
+        3 => 'd',
+        4 => 'e',
+        5 => 'f',
+        6 => 'g',
+   }
+}
+
+impl CodeBook {
+    fn decode(self, word) {
+	    let real_chars = word.chars()
+		    .map(|c| self.map[c])
+			.collect_vec();
+
+        let t = real_chars.iter().map(to_digit).collect_vec();
+		t.sort_int();
+		let s = t.iter().map(from_digit).fold("", |a, b| `${a}${b}`);
+        RAW_PATTERNS.iter().find(|v| v == s)
+    }
+}
+
+const CHARS = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+
+fn generate_cb_rec(parent_chars, map, depth, out) {
+    let my_char = CHARS[depth];
+    for c in "abcdefg".chars().filter(|v| parent_chars.iter().find(|c| c == v).is_none()) {
+	    parent_chars.push(c);
+	    map[my_char] = c;
+		if depth < 6 {
+		    generate_cb_rec(parent_chars, map, depth + 1, out);
+        } else {
+		    out.push(CodeBook { map: map.clone() });
+        }
+		parent_chars.pop();
+    }
+}
+
+fn generate_codebooks() {
+    let out = [];
+    generate_cb_rec([], HashMap::new(), 0, out);
+	out
+}
+
+fn parse_line(line){
+   	let r = line.split(" | ");
+    let [signals, outputs] = r.collect_vec();
+
+	let in_words = signals.split(" ").collect_vec();
+    let out_words = outputs.split(" ").collect_vec();
+	(in_words, out_words)
+}
+
+fn task1(items) {
+     items.iter()
+	     .flat_map(|v| v.1.iter())
+		 .map(|v| v.len())
+		 .filter(|v| v == 7 || v == 4 || v == 3 || v == 2)
+		 .count()
+}
+
+fn task2(lines) {
+    let cb = generate_codebooks();
+	let r = [];
+	for l in lines {
+        for c in cb {
+		    if l.0.iter().map(|l| c.decode(l)).all(Option::is_some) && l.1.iter().map(|l| c.decode(l)).all(Option::is_some) {
+			    r.push(l.1.iter().map(|l| c.decode(l).unwrap()).map(|c| RAW_PATTERNS.iter().enumerate().filter(|(p, v)| v == c).map(|v| v.0).next().unwrap()).fold(0, |a, b| a * 10 + b));
+            }
+        }
+    }
+	r.iter().sum()
+}
+
+pub async fn main() {
+	let lines = read_file("inputs/day8.txt")
+	    await?
+		.filter(|v| v.len() > 0)
+		.map(parse_line)
+		.collect_vec();
+
+    println(`Task1: ${task1(lines)}`);
+    println(`Task1: ${task2(lines)}`);
+}
+
+const EXAMPLE_DATA = [
+    "be cfbegad cbdgef fgaecd cgeb fdcge agebfd fecdb fabcd edb | fdgacbe cefdb cefbgd gcbe",
+    "edbfga begcd cbg gc gcadebf fbgde acbgfd abcde gfcbed gfec | fcgedb cgb dgebacf gc",
+    "fgaebd cg bdaec gdafb agbcfd gdcbef bgcad gfac gcb cdgabef | cg cg fdcagb cbg",
+    "fbegcd cbd adcefb dageb afcb bc aefdc ecdab fgdeca fcdbega | efabcd cedba gadfec cb",
+    "aecbfdg fbg gf bafeg dbefa fcge gcbea fcaegb dgceab fcbdga | gecf egdcabf bgf bfgea",
+    "fgeab ca afcebg bdacfeg cfaedg gcfdb baec bfadeg bafgc acf | gebdcfa ecba ca fadegcb",
+    "dbcfg fgd bdegcaf fgec aegbdf ecdfab fbedc dacgb gdcebf gf | cefg dcbef fcge gbcadfe",
+    "bdfegc cbegaf gecbf dfcage bdacg ed bedf ced adcbefg gebcd | ed bcgafe cdgba cbgef",
+    "egadfb cdbfeg cegd fecab cgb gbdefca cg fgcdab egfdb bfceg | gbdfcae bgc cg cgb",
+    "gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce",
+];
+
+
+#[test]
+fn test_day1() {
+    let lines = EXAMPLE_DATA.iter().map(parse_line).collect_vec();
+	assert_eq!(task1(lines), 26);
+}
+
+#[test]
+fn test_task() {
+	let lines = EXAMPLE_DATA.iter().map(parse_line).collect_vec();
+	assert_eq!(task2(lines), 61229);
+}
