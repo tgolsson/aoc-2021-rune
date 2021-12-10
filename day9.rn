@@ -1,0 +1,140 @@
+#!./runic
+
+mod utils;
+use utils::read_file;
+use std::collections::HashSet;
+struct Map {
+    raw, dims
+}
+
+impl Map {
+    fn get(self, coord) {
+        if self.valid(coord) {
+            Some(self.raw[coord.1][coord.0])
+        } else {
+            None
+        }
+    }
+
+    fn valid(self, coord) {
+    dbg(coord);
+        let (x, y) = coord;
+        x >= 0 && y >= 0 && x < self.dims.0 && y < self.dims.1
+    }
+
+    fn floodfill_from(self, coord) {
+        let closed = HashSet::new();
+        let open = [coord];
+
+        while open.len() > 0 {
+            dbg(open); 
+            let here = open.pop()?;
+            if self.get(here) == Some(9) {
+                continue; 
+            }
+            closed.insert(here);
+
+            for n in neighbours(here) {
+                if !self.valid(n) || closed.contains(n) {
+                    continue;
+                }
+
+                if open.iter().find(|v| v == n).is_none() {
+                    open.push(n); 
+                }
+            }
+        }
+        closed.len()
+    }
+} 
+
+
+fn parse_line(line) {
+    line.chars()
+        .map(|v| `${v}`)
+        .map(std::int::parse)
+        .map(std::result::Result::unwrap)
+        .collect::<Vec>()
+}
+
+fn parse_map(lines) {
+    let lines = lines.map(parse_line).collect::<Vec>();
+
+    let dims = (lines[0].len(), lines.len());
+
+    Map { raw: lines, dims }
+}
+
+fn neighbours(coord) {
+    [
+        (coord.0 - 1, coord.1),
+        (coord.0 + 1, coord.1),
+        (coord.0, coord.1 - 1),
+        (coord.0, coord.1 + 1),
+    ].iter()
+}
+
+fn get_mins(map) {
+    let out = [];
+
+    for y in 0..map.dims.1 {
+        for x in 0..map.dims.0 {
+            let here = map.get((x, y))?;
+
+            if neighbours((x, y)).map(|c| map.get(c)).filter(Option::is_some).map(Option::unwrap).all(|l| l > here) {
+                out.push((x, y));
+            }
+        }
+    } 
+
+    out
+}
+
+fn task1(map) {
+    let locs = get_mins(map);
+
+    locs.iter().map(|c| map.get(c).unwrap() + 1).collect::<Vec>()
+}
+
+fn task2(map) {
+
+    let low_points = get_mins(map);
+    let basin_sizes = low_points.iter().map(|c| map.floodfill_from(c)).collect::<Vec>();
+    basin_sizes.sort::<int>();
+    basin_sizes.iter().skip(basin_sizes.len() - 3).product()
+}
+
+pub async fn main() {
+    let map = parse_map(read_file("inputs/day9.txt").await?);
+    let low_points = task1(map);
+    dbg(low_points.iter().sum());
+
+    dbg(task2(map));
+}
+
+const EXAMPLE_MAP = [
+    "2199943210",
+    "3987894921",
+    "9856789892",
+    "8767896789",
+    "9899965678",
+];
+#[test]
+fn test_1() {
+    let map = parse_map(EXAMPLE_MAP.iter());
+    let low_points = task1(map);
+    
+    assert_eq!(low_points, [2, 1, 6, 6]);
+    assert_eq!(low_points.iter().sum(), 15);
+}
+
+
+#[test]
+fn test_2() {
+    let map = parse_map(EXAMPLE_MAP.iter());
+    let low_points = get_mins(map);
+    
+    let basin_sizes = low_points.iter().map(|c| map.floodfill_from(c)).collect::<Vec>();
+    basin_sizes.sort::<int>();
+    assert_eq!(basin_sizes.iter().skip(basin_sizes.len() - 3).take(3).product(), 1134);
+}

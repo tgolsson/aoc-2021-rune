@@ -1,0 +1,99 @@
+#!./runic
+
+mod utils;
+use utils::read_file;
+
+const EXAMPLE_DATA = [
+    "[({(<(())[]>[[{[]{<()<>>",
+    "[(()[<>])]({[<{<<[]>>(",
+    "{([(<{}[<>[]}>{[]{[(<()>",
+    "(((({<>}<{<{<>}{[]{[]{}",
+    "[[<[([]))<([[{}[[()]]]",
+    "[{[{({}]{}}([{[{{{}}([]",
+    "{<[[]]>}<{[{[{[]{()[[[]",
+    "[<(<(<(<{}))><([]([]()",
+    "<{([([[(<>()){}]>(<<{{",
+    "<{([{{}}[<[[[<>{}]]]>[]]",
+];
+
+fn validate(it) {
+    let expect_stack = [];
+    while let Some(here) = it.next() {
+
+        if here == '}' || here == ')' || here == ']' || here == '>' {
+            let last = expect_stack.get(expect_stack.len() - 1);
+            if last == Some(here) {
+                expect_stack.pop();
+                continue;
+            } else {
+                return Err(here);
+            }
+        }
+
+        expect_stack.push(match here {
+            '{' => '}',
+            '(' => ')',
+            '<' => '>',
+            '[' => ']',
+        });
+    }
+    Ok(expect_stack)
+}
+
+fn score(v) {
+   match v {
+       ')' => 3,
+       ']' => 57,
+       '}' => 1197,
+       '>' => 25137,
+   }
+}
+
+
+fn complete_and_score(completions) {
+    completions.iter().rev().fold(0, |s, c| {
+        s * 5 + match c {
+       ')' => 1,
+       ']' => 2,
+       '}' => 3,
+       '>' => 4,
+   }})
+}
+
+pub async fn main() {
+    let lines = read_file("inputs/day10.txt").await?.filter(|v| v != "").collect::<Vec>();
+  
+    let fails = [];
+    let incomplete = [];
+    for case in lines {
+        match validate(case.chars().peekable()) {
+            Err(err) => fails.push(err),
+            Ok(expect) => incomplete.push(expect),
+        }
+    }
+
+    dbg(fails.iter().map(score).sum());
+    let rated = incomplete.iter().map(complete_and_score).collect::<Vec>();
+    rated.sort::<int>();
+
+    dbg(rated[rated.len() / 2]);
+}
+
+#[test]
+
+fn test_task1() {
+    let fails = [];
+    let incomplete = [];
+    for case in EXAMPLE_DATA {
+        match validate(case.chars().peekable()) {
+            Err(err) => fails.push(err),
+            Ok(expect) => incomplete.push( expect),
+        }
+    }
+
+    assert_eq!(fails.iter().map(score).sum(), 26397);
+       let rated = incomplete.iter().map(complete_and_score).collect::<Vec>();
+    rated.sort::<int>();
+
+    assert_eq!(rated, [294, 5566, 288957, 995444, 1480781]);
+}
